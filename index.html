@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Drag & Drop Letter Game</title>
+
+<style>
+body {
+    font-family: Arial;
+    text-align: center;
+    background: linear-gradient(to right, #c2e9fb, #a1c4fd);
+}
+
+#game { display:none; }
+
+.container {
+    display:flex;
+    justify-content:space-around;
+    margin-top:40px;
+}
+
+.column {
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
+
+.letter {
+    padding:15px;
+    background:yellow;
+    border-radius:10px;
+    font-size:30px;
+    cursor:grab;
+}
+
+.imgBox {
+    width:130px;
+    height:130px;
+    border:2px dashed black;
+    border-radius:10px;
+}
+
+.imgBox img {
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+
+#feedback {
+    font-size:50px;
+    margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Drag the Letter to the Correct Picture</h1>
+
+<!-- START -->
+<div id="start">
+<input id="studentName" placeholder="Enter Name"><br><br>
+<input id="studentClass" placeholder="Enter Class"><br><br>
+<button onclick="startGame()">Start Game</button>
+</div>
+
+<!-- GAME -->
+<div id="game">
+<h3 id="studentInfo"></h3>
+
+<div class="container">
+<div class="column" id="letters"></div>
+<div class="column" id="images"></div>
+</div>
+
+<div id="feedback"></div>
+</div>
+
+<!-- SCORE -->
+<div id="scoreCard" style="display:none;">
+<h2>🎉 Game Completed 🎉</h2>
+<p id="scoreText"></p>
+</div>
+
+<!-- AUDIO -->
+<audio id="bgm" src="https://cdn.pixabay.com/download/audio/2022/10/25/audio_8b1e1f68a2.mp3" loop></audio>
+<audio id="clap" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_115b9bce6c.mp3"></audio>
+<audio id="wrong" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_5a7d0d7a7d.mp3"></audio>
+
+<script>
+
+let pairs = [
+{letter:"A", name:"apple", img:"https://upload.wikimedia.org/wikipedia/commons/1/15/Red_Apple.jpg"},
+{letter:"B", name:"bat", img:"https://upload.wikimedia.org/wikipedia/commons/8/8e/Cricket_bat_and_ball.jpg"},
+{letter:"C", name:"cat", img:"https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg"},
+{letter:"D", name:"dog", img:"https://upload.wikimedia.org/wikipedia/commons/6/6e/Golde33443.jpg"}
+];
+
+let score = 0;
+let matched = 0;
+
+function startGame(){
+document.getElementById("start").style.display="none";
+document.getElementById("game").style.display="block";
+
+let name = document.getElementById("studentName").value;
+let cls = document.getElementById("studentClass").value;
+
+document.getElementById("studentInfo").innerText =
+"Name: " + name + " | Class: " + cls;
+
+// Start music safely
+document.getElementById("bgm").play().catch(()=>{});
+
+// Voice instruction
+setTimeout(()=>{
+speechSynthesis.speak(
+new SpeechSynthesisUtterance("Drag the letter to the correct picture")
+);
+},500);
+
+loadGame();
+}
+
+function loadGame(){
+
+let lettersHTML = "";
+let imagesHTML = "";
+
+// shuffle images
+let shuffled = [...pairs].sort(()=>Math.random()-0.5);
+
+pairs.forEach(p=>{
+lettersHTML += `<div class="letter" draggable="true"
+ondragstart="drag(event)" id="${p.name}">
+${p.letter}
+</div>`;
+});
+
+shuffled.forEach(p=>{
+imagesHTML += `<div class="imgBox"
+data-name="${p.name}"
+ondrop="drop(event)"
+ondragover="allowDrop(event)">
+<img src="${p.img}">
+</div>`;
+});
+
+document.getElementById("letters").innerHTML = lettersHTML;
+document.getElementById("images").innerHTML = imagesHTML;
+}
+
+function allowDrop(ev){
+ev.preventDefault();
+}
+
+function drag(ev){
+ev.dataTransfer.setData("text", ev.target.id);
+}
+
+function drop(ev){
+ev.preventDefault();
+
+let dragged = ev.dataTransfer.getData("text");
+let target = ev.currentTarget.getAttribute("data-name");
+
+if(dragged === target){
+
+document.getElementById("feedback").innerHTML = "👏";
+document.getElementById("clap").play().catch(()=>{});
+
+score++;
+matched++;
+
+// remove matched
+ev.currentTarget.innerHTML = "✔";
+document.getElementById(dragged).style.display="none";
+
+} else {
+
+document.getElementById("feedback").innerHTML = "❌";
+document.getElementById("wrong").play().catch(()=>{});
+}
+
+setTimeout(()=>{
+document.getElementById("feedback").innerHTML = "";
+},1000);
+
+if(matched === 4){
+setTimeout(endGame,1500);
+}
+}
+
+function endGame(){
+document.getElementById("game").style.display="none";
+document.getElementById("scoreCard").style.display="block";
+
+document.getElementById("scoreText").innerText =
+"Score: " + score + " / 4";
+}
+
+</script>
+
+</body>
+</html>
